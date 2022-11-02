@@ -19,8 +19,10 @@
       - [**Creating a destination**](#creating-a-destination)
       - [**Getting alerts**](#getting-alerts)
       - [**Acknowledge alerts**](#acknowledge-alerts)
-  - [Using IAM credentials for authentication](#using-iam-credentials-for-authentication)
+  - [Using different authentication schemas](#using-different-authentication-schemas)
+    - [Using IAM credentials](#using-iam-credentials)
       - [Pre-requisites to use `AWSV4SignerAuth`](#pre-requisites-to-use-awsv4signerauth)
+    - [Using Kerberos](#using-kerberos)
 
 # User guide of OpenSearch Python Client
 
@@ -371,13 +373,17 @@ query = {
 response = client.plugins.alerting.acknowledge_alert(query)
 print(response)
 ```
-## Using IAM credentials for authentication
+## Using different authentication schemas
+
+It is possible to use different schemas for the authentication to OpenSearch. The parameters of `connection_class` and `http_auth` can be used for this. As an example, here we have how to authenticate using IAM credentials and Kerberos authentication.
+
+### Using IAM credentials
 
 Refer the AWS documentation regarding usage of IAM credentials to sign requests to OpenSearch APIs - [Signing HTTP requests to Amazon OpenSearch Service.](https://docs.aws.amazon.com/opensearch-service/latest/developerguide/request-signing.html#request-signing-python)
 
 Opensearch-py client library also provides an in-house IAM based authentication feature, `AWSV4SignerAuth` that will help users to connect to their opensearch clusters by making use of IAM roles.
 
-#### Pre-requisites to use `AWSV4SignerAuth`
+##### Pre-requisites to use `AWSV4SignerAuth`
  - Python version 3.6 or above,
  - Install [botocore](https://pypi.org/project/botocore/) using pip
 
@@ -421,4 +427,26 @@ response = client.search(
 
 print('\nSearch results:')
 print(response)
+```
+
+### Using Kerberos
+
+There are several python packages that provide kerberos support over http connections, like [requests-kerberos](http://pypi.org/project/requests-kerberos) and [requests-gssapi](https://pypi.org/project/requests-gssapi). The following example shows how to setup the authentitcation. Note that some of the parameters, like the `mutual_authentication` might depend on the server settings.
+
+```python
+
+from opensearchpy import OpenSearch, RequestsHttpConnection
+from requests_kerberos import HTTPKerberosAuth, OPTIONAL
+
+url = 'htps://...'
+client = OpenSearch(
+    [url],
+    use_ssl=True,
+    verify_certs=True,
+    connection_class=RequestsHttpConnection,
+    http_auth=HTTPKerberosAuth(mutual_authentication=OPTIONAL)
+)
+
+health = client.cluster.health()
+print(health)
 ```
